@@ -182,6 +182,8 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
   </div>
   <div class="hright">
     <div class="stat-pill">共 <span id="totalCount">0</span> 个模型</div>
+    <button class="add-btn" style="background:var(--accent3);color:#0e2a1a" onclick="openImport()">📥 导入JSON</button>
+    <button class="add-btn" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onclick="exportData()">📤 导出</button>
     <button class="add-btn" onclick="openAdd()">+ 添加模型</button>
   </div>
 </header>
@@ -270,6 +272,37 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
   <div class="mactions">
     <button class="btn-cancel" onclick="closeAdd()">取消</button>
     <button class="btn-save" onclick="saveModel()">保存</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ IMPORT MODAL ══ -->
+<div class="overlay" id="importModal">
+<div class="modal" style="max-width:640px">
+  <h2>📥 导入 JSON</h2>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.6">
+    把我给你生成的JSON粘贴进来，支持单个对象 <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:11px">{...}</code> 或数组 <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:11px">[{...},{...}]</code>，一次可以导入多个模型。
+  </p>
+  <div class="fg">
+    <label>JSON 内容</label>
+    <textarea id="importJson" style="min-height:260px;font-family:'SF Mono',monospace;font-size:12px;line-height:1.6" placeholder='粘贴JSON，例如：
+{
+  "name": "U-Net",
+  "category": "U-Net变体",
+  "paper": "U-Net: Convolutional Networks...",
+  "year": "2015",
+  "venue": "MICCAI",
+  "dice": "82.3",
+  "tags": ["2D", "skip-connection"],
+  "inno_arch": "U形编码器-解码器...",
+  "formula": "p_{max}(x) = ...",
+  "notes": "基础架构"
+}'></textarea>
+  </div>
+  <div id="importError" style="color:var(--red);font-size:12px;margin-top:8px;display:none"></div>
+  <div class="mactions">
+    <button class="btn-cancel" onclick="closeImport()">取消</button>
+    <button class="btn-save" onclick="doImport()">导入</button>
   </div>
 </div>
 </div>
@@ -654,6 +687,70 @@ function showToast(msg,type){
   t.textContent=msg; t.className='toast show'+(type==='ok'?' ok':'');
   setTimeout(()=>t.className='toast',2400);
 }
+
+/* ── IMPORT / EXPORT ── */
+function openImport(){
+  document.getElementById('importJson').value='';
+  document.getElementById('importError').style.display='none';
+  document.getElementById('importModal').classList.add('open');
+}
+function closeImport(){ document.getElementById('importModal').classList.remove('open'); }
+
+function doImport(){
+  const raw = document.getElementById('importJson').value.trim();
+  const errEl = document.getElementById('importError');
+  if(!raw){ errEl.textContent='请粘贴JSON内容'; errEl.style.display='block'; return; }
+
+  let parsed;
+  try{ parsed = JSON.parse(raw); }
+  catch(e){ errEl.textContent='JSON格式错误：'+e.message; errEl.style.display='block'; return; }
+
+  const items = Array.isArray(parsed) ? parsed : [parsed];
+  let count=0;
+  items.forEach(item=>{
+    if(!item.name){ return; }
+    const existing = models.findIndex(m=>m.name===item.name);
+    const obj = {
+      id: item.id || Date.now().toString()+Math.random().toString(36).slice(2),
+      name: item.name||'',
+      category: item.category||'U-Net变体',
+      paper: item.paper||'',
+      year: String(item.year||''),
+      venue: item.venue||'',
+      link: item.link||'',
+      dataset: item.dataset||'',
+      dice: String(item.dice||''),
+      tags: Array.isArray(item.tags)?item.tags:(item.tags?item.tags.split(',').map(t=>t.trim()):[]),
+      inno_input: item.inno_input||'',
+      inno_arch: item.inno_arch||'',
+      inno_loss: item.inno_loss||'',
+      inno_other: item.inno_other||'',
+      formula: item.formula||'',
+      notes: item.notes||'',
+      images: item.images||[]
+    };
+    if(existing>=0){ models[existing]=obj; }
+    else{ models.unshift(obj); }
+    count++;
+  });
+
+  saveData(); render(); closeImport();
+  showToast(`✅ 成功导入 ${count} 个模型`,'ok');
+}
+
+function exportData(){
+  const exportable = models.map(m=>({...m, images:[]}));
+  const blob = new Blob([JSON.stringify(exportable,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'medseg_zoo_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  showToast('✅ 已导出 JSON','ok');
+}
+
+document.getElementById('importModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('importModal')) closeImport();
+});
 
 loadData();
 </script>
