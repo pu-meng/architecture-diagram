@@ -169,20 +169,25 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 .toast.ok{border-color:rgba(62,207,142,.4);color:var(--accent3)}
 
 /* ZOOM LIGHTBOX */
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;display:none;flex-direction:column}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:none;flex-direction:column;transition:background .3s}
 .lightbox.open{display:flex}
-.lb-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(0,0,0,.5);flex-shrink:0;z-index:2}
+.lightbox.lb-full{background:#000}
+.lb-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(0,0,0,.6);flex-shrink:0;z-index:2;transition:opacity .3s,transform .3s}
+.lb-header.hidden{opacity:0;pointer-events:none;transform:translateY(-100%)}
 .lb-header-left{display:flex;align-items:center;gap:8px}
 .lb-caption{font-size:12px;color:rgba(255,255,255,.6);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lightbox-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:7px;padding:5px 14px;font-size:12px;cursor:pointer;transition:background .15s;white-space:nowrap}
-.lightbox-btn:hover{background:rgba(255,255,255,.2)}
+.lightbox-btn:hover{background:rgba(255,255,255,.22)}
 .lb-body{flex:1;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;cursor:grab}
 .lb-body.grabbing{cursor:grabbing}
-.lb-img-wrap{position:absolute;display:flex;align-items:center;justify-content:center;transition:none}
+.lb-img-wrap{position:absolute;display:flex;align-items:center;justify-content:center}
 .lightbox-img{max-width:none;max-height:none;border-radius:4px;user-select:none;pointer-events:none}
-.lb-zoom-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(0,0,0,.5);flex-shrink:0;justify-content:center}
+.lb-zoom-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(0,0,0,.6);flex-shrink:0;justify-content:center;transition:opacity .3s,transform .3s}
+.lb-zoom-bar.hidden{opacity:0;pointer-events:none;transform:translateY(100%)}
 .lb-zoom-label{font-size:12px;color:rgba(255,255,255,.5);min-width:44px;text-align:center}
-.lb-hint{font-size:11px;color:rgba(255,255,255,.25)}
+.lb-hint{font-size:11px;color:rgba(255,255,255,.3)}
+.lb-corner-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.2);pointer-events:none;transition:opacity .5s}
+.lb-corner-hint.visible{color:rgba(255,255,255,.5)}
 
 /* NUMBER BADGE on card */
 .num-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:rgba(255,255,255,.7);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
@@ -386,7 +391,7 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
   <div class="detail-img-gallery" id="detailGallery">
     <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:6px">
       <button class="fb" id="bgToggleBtn" onclick="toggleGalleryBg()" style="font-size:11px;padding:4px 10px">🌓 切换背景</button>
-      <button class="fb" onclick="openLightboxFromDetail()" style="font-size:11px;padding:4px 10px">🔍 放大</button>
+      <button class="fb" onclick="openLightboxFromDetail()" style="font-size:11px;padding:4px 10px">🔍 查看原图</button>
     </div>
     <div class="gallery-main" id="galleryMain"></div>
     <div class="img-caption-display" id="galleryCaption"></div>
@@ -434,15 +439,16 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
-  <div class="lb-header">
+  <div class="lb-header" id="lbHeader">
     <div class="lb-header-left">
       <button class="lightbox-btn" onclick="lbPrev(event)">← 上一张</button>
       <button class="lightbox-btn" onclick="lbNext(event)">下一张 →</button>
       <span class="lb-caption" id="lbCaption"></span>
     </div>
     <div class="lb-header-left">
-      <span class="lb-hint">滚轮缩放 · 拖动平移 · ESC关闭</span>
-      <button class="lightbox-btn" onclick="lbResetView()">重置视图</button>
+      <span class="lb-hint">滚轮缩放 · 拖动平移 · 双击放大</span>
+      <button class="lightbox-btn" onclick="lbResetView()">重置</button>
+      <button class="lightbox-btn" id="lbFullBtn" onclick="toggleLbFull()">⛶ 全屏</button>
       <button class="lightbox-btn" onclick="closeLightbox()">✕ 关闭</button>
     </div>
   </div>
@@ -450,11 +456,12 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
     <div class="lb-img-wrap" id="lbImgWrap">
       <img class="lightbox-img" id="lbImg" alt="">
     </div>
+    <div class="lb-corner-hint" id="lbCornerHint">移动鼠标显示工具栏</div>
   </div>
-  <div class="lb-zoom-bar">
-    <button class="lightbox-btn" onclick="lbZoom(-0.25)">－</button>
+  <div class="lb-zoom-bar" id="lbZoomBar">
+    <button class="lightbox-btn" onclick="lbZoom(-0.15)">－</button>
     <span class="lb-zoom-label" id="lbZoomLabel">100%</span>
-    <button class="lightbox-btn" onclick="lbZoom(0.25)">＋</button>
+    <button class="lightbox-btn" onclick="lbZoom(0.15)">＋</button>
     <button class="lightbox-btn" style="margin-left:8px" onclick="lbFit()">适应窗口</button>
     <button class="lightbox-btn" onclick="lbActual()">原始大小</button>
   </div>
@@ -903,13 +910,17 @@ document.getElementById('ghModal').addEventListener('click',e=>{
 let lbImgs=[], lbIdx=0;
 let lbScale=1, lbX=0, lbY=0;
 let lbDragging=false, lbDragStart={x:0,y:0};
+let lbFullMode=false;
+let lbHideTimer=null;
 
 function openLightbox(imgs,idx){
   lbImgs=imgs; lbIdx=idx;
   document.getElementById('lbImg').src=imgs[idx].data;
   document.getElementById('lbCaption').textContent=(imgs[idx].caption||'')+` (${idx+1}/${imgs.length})`;
   document.getElementById('lightbox').classList.add('open');
-  setTimeout(lbFit, 80);
+  lbFullMode=false;
+  showLbBars();
+  setTimeout(lbFit,80);
 }
 function openLightboxFromDetail(){
   const m=models.find(x=>x.id===curDetailId);
@@ -917,8 +928,43 @@ function openLightboxFromDetail(){
   openLightbox(m.images, galleryIdx);
 }
 function closeLightbox(){
-  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox').classList.remove('open','lb-full');
+  lbFullMode=false;
+  clearTimeout(lbHideTimer);
+  showLbBars();
 }
+
+/* FULLSCREEN toggle */
+function toggleLbFull(){
+  lbFullMode=!lbFullMode;
+  document.getElementById('lightbox').classList.toggle('lb-full',lbFullMode);
+  document.getElementById('lbFullBtn').textContent=lbFullMode?'⊠ 退出全屏':'⛶ 全屏';
+  if(lbFullMode){ hideLbBarsDelayed(); }
+  else { showLbBars(); }
+  setTimeout(lbFit,80);
+}
+
+/* Auto-hide bars in fullscreen */
+function showLbBars(){
+  clearTimeout(lbHideTimer);
+  document.getElementById('lbHeader').classList.remove('hidden');
+  document.getElementById('lbZoomBar').classList.remove('hidden');
+}
+function hideLbBarsDelayed(){
+  clearTimeout(lbHideTimer);
+  lbHideTimer=setTimeout(()=>{
+    if(lbFullMode){
+      document.getElementById('lbHeader').classList.add('hidden');
+      document.getElementById('lbZoomBar').classList.add('hidden');
+    }
+  },2000);
+}
+
+document.getElementById('lbBody').addEventListener('mousemove',()=>{
+  if(lbFullMode){ showLbBars(); hideLbBarsDelayed(); }
+});
+
+/* NAV */
 function lbPrev(e){ if(e)e.stopPropagation(); lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length; lbUpdateImg(); }
 function lbNext(e){ if(e)e.stopPropagation(); lbIdx=(lbIdx+1)%lbImgs.length; lbUpdateImg(); }
 function lbUpdateImg(){
@@ -926,6 +972,8 @@ function lbUpdateImg(){
   document.getElementById('lbCaption').textContent=(lbImgs[lbIdx].caption||'')+` (${lbIdx+1}/${lbImgs.length})`;
   setTimeout(lbFit,80);
 }
+
+/* TRANSFORM */
 function lbApplyTransform(){
   document.getElementById('lbImgWrap').style.transform=`translate(${lbX}px,${lbY}px) scale(${lbScale})`;
   document.getElementById('lbZoomLabel').textContent=Math.round(lbScale*100)+'%';
@@ -934,7 +982,7 @@ function lbFit(){
   const body=document.getElementById('lbBody');
   const img=document.getElementById('lbImg');
   if(!img.naturalWidth){ img.onload=lbFit; return; }
-  const sw=body.clientWidth-40, sh=body.clientHeight-40;
+  const sw=body.clientWidth-24, sh=body.clientHeight-24;
   lbScale=Math.min(sw/img.naturalWidth, sh/img.naturalHeight, 1);
   lbX=0; lbY=0;
   lbApplyTransform();
@@ -942,20 +990,36 @@ function lbFit(){
 function lbActual(){ lbScale=1; lbX=0; lbY=0; lbApplyTransform(); }
 function lbResetView(){ lbFit(); }
 function lbZoom(delta){
-  lbScale=Math.max(0.1, Math.min(8, lbScale+delta));
+  lbScale=Math.max(0.05, Math.min(10, lbScale+delta));
   lbApplyTransform();
 }
 
+/* ZOOM at cursor position */
+function lbZoomAt(clientX, clientY, delta){
+  const body=document.getElementById('lbBody');
+  const rect=body.getBoundingClientRect();
+  const cx=clientX-rect.left-rect.width/2;
+  const cy=clientY-rect.top-rect.height/2;
+  const oldScale=lbScale;
+  lbScale=Math.max(0.05,Math.min(10,lbScale+delta));
+  const ratio=lbScale/oldScale;
+  lbX=cx-(cx-lbX)*ratio;
+  lbY=cy-(cy-lbY)*ratio;
+  lbApplyTransform();
+}
+
+/* WHEEL zoom */
 const lbBody=document.getElementById('lbBody');
 lbBody.addEventListener('wheel',e=>{
   e.preventDefault();
-  const delta=e.deltaY>0?-0.15:0.15;
-  lbScale=Math.max(0.1,Math.min(8,lbScale+delta));
-  lbApplyTransform();
+  const delta=e.deltaY>0?-0.08:0.08;
+  lbZoomAt(e.clientX, e.clientY, delta);
 },{passive:false});
 
+/* DRAG */
 lbBody.addEventListener('mousedown',e=>{
-  lbDragging=true; lbDragStart={x:e.clientX-lbX, y:e.clientY-lbY};
+  if(e.button!==0) return;
+  lbDragging=true; lbDragStart={x:e.clientX-lbX,y:e.clientY-lbY};
   lbBody.classList.add('grabbing');
 });
 document.addEventListener('mousemove',e=>{
@@ -965,18 +1029,47 @@ document.addEventListener('mousemove',e=>{
 });
 document.addEventListener('mouseup',()=>{ lbDragging=false; lbBody.classList.remove('grabbing'); });
 
-lbBody.addEventListener('touchstart',e=>{ if(e.touches.length===1){ lbDragging=true; lbDragStart={x:e.touches[0].clientX-lbX,y:e.touches[0].clientY-lbY}; }},{passive:true});
-lbBody.addEventListener('touchmove',e=>{ if(lbDragging&&e.touches.length===1){ lbX=e.touches[0].clientX-lbDragStart.x; lbY=e.touches[0].clientY-lbDragStart.y; lbApplyTransform(); }},{passive:true});
+/* DOUBLE CLICK zoom to position */
+lbBody.addEventListener('dblclick',e=>{
+  if(lbScale<1.5){ lbZoomAt(e.clientX,e.clientY,1.0); }
+  else { lbFit(); }
+});
+
+/* TOUCH */
+let lbTouches={};
+lbBody.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    lbDragging=true;
+    lbDragStart={x:e.touches[0].clientX-lbX,y:e.touches[0].clientY-lbY};
+  } else if(e.touches.length===2){
+    lbDragging=false;
+    lbTouches.dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    lbTouches.scale=lbScale;
+  }
+},{passive:true});
+lbBody.addEventListener('touchmove',e=>{
+  if(e.touches.length===1&&lbDragging){
+    lbX=e.touches[0].clientX-lbDragStart.x;
+    lbY=e.touches[0].clientY-lbDragStart.y;
+    lbApplyTransform();
+  } else if(e.touches.length===2&&lbTouches.dist){
+    const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    lbScale=Math.max(0.05,Math.min(10,lbTouches.scale*(d/lbTouches.dist)));
+    lbApplyTransform();
+  }
+},{passive:true});
 lbBody.addEventListener('touchend',()=>{ lbDragging=false; });
 
+/* KEYBOARD */
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('lightbox').classList.contains('open')) return;
   if(e.key==='ArrowLeft') lbPrev();
   if(e.key==='ArrowRight') lbNext();
-  if(e.key==='Escape') closeLightbox();
-  if(e.key==='+'||e.key==='=') lbZoom(0.2);
-  if(e.key==='-') lbZoom(-0.2);
+  if(e.key==='Escape'){ if(lbFullMode){ toggleLbFull(); } else { closeLightbox(); } }
+  if(e.key==='+'||e.key==='=') lbZoom(0.15);
+  if(e.key==='-') lbZoom(-0.15);
   if(e.key==='0') lbFit();
+  if(e.key==='f'||e.key==='F') toggleLbFull();
 });
 
 function toggleZoom(){}
