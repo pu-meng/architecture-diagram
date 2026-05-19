@@ -403,9 +403,17 @@ function render(){
     const imgs = m.images||[];
     const firstImg = imgs[0];
     const cc = catClass[m.category]||'cat-cnn';
+    const catColors={'U-Net变体':'#4f9cf9','CNN/FCN':'#3ecf8e','Transformer':'#a78bfa','Attention':'#fcd34d','Foundation Model':'#fca5a5','Hybrid':'#f9a8d4'};
+    const catBg={'U-Net变体':'rgba(79,156,249,0.08)','CNN/FCN':'rgba(62,207,142,0.08)','Transformer':'rgba(167,139,250,0.08)','Attention':'rgba(252,211,77,0.08)','Foundation Model':'rgba(252,165,165,0.08)','Hybrid':'rgba(249,168,212,0.08)'};
+    const col=catColors[m.category]||'#9499a8';
+    const bg=catBg[m.category]||'rgba(148,153,168,0.08)';
+    const initials=m.name.replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'?';
     const imgHtml = firstImg
       ? `<img src="${firstImg.data}" alt="${m.name}">`
-      : `<div class="placeholder-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span style="font-size:11px">暂无图片</span></div>`;
+      : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%;height:100%;background:${bg}">
+           <div style="width:56px;height:56px;border-radius:14px;background:${bg};border:1.5px solid ${col}33;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:${col};letter-spacing:-1px">${initials}</div>
+           <div style="font-size:11px;color:${col};opacity:.7">${m.category}</div>
+         </div>`;
     const countBadge = imgs.length>1?`<div class="img-count-badge">📷 ${imgs.length}</div>`:'';
     const tags = (m.tags||[]).slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
     const innoPreview = m.inno_arch||m.inno_loss||'';
@@ -510,7 +518,7 @@ function renderImgGrid(){
     const slot=document.createElement('div'); slot.className='add-img-slot';
     slot.innerHTML=`<input type="file" accept="image/*" multiple onchange="addImgs(event)">
       <div style="font-size:22px;opacity:.5">+</div>
-      <span>上传图片</span>`;
+      <span>点击上传 或 Ctrl+V 粘贴</span>`;
     g.appendChild(slot);
   }
 }
@@ -687,6 +695,23 @@ function showToast(msg,type){
   t.textContent=msg; t.className='toast show'+(type==='ok'?' ok':'');
   setTimeout(()=>t.className='toast',2400);
 }
+
+/* ── PASTE IMAGE SUPPORT ── */
+document.addEventListener('paste', e=>{
+  if(!document.getElementById('addModal').classList.contains('open')) return;
+  if(formImgs.length>=6) return;
+  const items=[...e.clipboardData.items];
+  const imgItems=items.filter(i=>i.type.startsWith('image/'));
+  if(!imgItems.length) return;
+  e.preventDefault();
+  imgItems.forEach(item=>{
+    if(formImgs.length>=6) return;
+    const file=item.getAsFile();
+    const r=new FileReader();
+    r.onload=ev=>{ formImgs.push({data:ev.target.result,caption:''}); renderImgGrid(); showToast('✅ 截图已粘贴','ok'); };
+    r.readAsDataURL(file);
+  });
+});
 
 /* ── IMPORT / EXPORT ── */
 function openImport(){
