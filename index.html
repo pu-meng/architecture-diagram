@@ -199,6 +199,7 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
   </div>
   <div class="hright">
     <div class="stat-pill">共 <span id="totalCount">0</span> 个模型</div>
+    <div class="stat-pill" id="syncStatus" style="color:var(--text3)">⏳ 同步中</div>
     <button class="add-btn" style="background:var(--accent3);color:#0e2a1a" onclick="openImport()">📥 导入JSON</button>
     <button class="add-btn" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onclick="exportData()">📤 导出</button>
     <button class="add-btn" onclick="openAdd()">+ 添加模型</button>
@@ -414,11 +415,47 @@ const catClass = {
 };
 
 /* ── STORAGE ── */
-function loadData(){
-  try{ models = JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ models=[]; }
+const REMOTE_URL = 'https://raw.githubusercontent.com/pu-meng/architecture-diagram/main/data.json';
+
+async function loadData(){
+  const local = localStorage.getItem(KEY);
+  if(local){ try{ models=JSON.parse(local); }catch(e){ models=[]; } }
   render();
+
+  const syncEl = document.getElementById('syncStatus');
+  try{
+    const res = await fetch(REMOTE_URL+'?t='+Date.now());
+    if(res.ok){
+      const remote = await res.json();
+      if(Array.isArray(remote) && remote.length>0){
+        const localTime = models[0]?._updated||0;
+        const remoteTime = remote[0]?._updated||1;
+        if(remoteTime >= localTime || models.length===0){
+          models = remote;
+          localStorage.setItem(KEY, JSON.stringify(models));
+          render();
+          syncEl.textContent='☁️ 云端已同步';
+          syncEl.style.color='var(--accent3)';
+          return;
+        }
+      }
+      syncEl.textContent='💾 本地版本';
+      syncEl.style.color='var(--text3)';
+    } else {
+      syncEl.textContent='⚠️ 无云端数据';
+      syncEl.style.color='var(--accent4)';
+    }
+  } catch(e){
+    syncEl.textContent='📡 离线模式';
+    syncEl.style.color='var(--text3)';
+  }
 }
-function saveData(){ localStorage.setItem(KEY,JSON.stringify(models)); }
+
+function saveData(){
+  const now = Date.now();
+  if(models.length>0) models[0]._updated = now;
+  localStorage.setItem(KEY,JSON.stringify(models));
+}
 
 /* ── RENDER ── */
 function render(){
@@ -867,13 +904,20 @@ function doImport(){
 }
 
 function exportData(){
-  const exportable = models.map(m=>({...m, images:[]}));
+  const now = Date.now();
+  const exportable = models.map((m,i)=>({
+    ...m,
+    images: m.images||[],
+    _updated: i===0 ? now : (m._updated||now)
+  }));
   const blob = new Blob([JSON.stringify(exportable,null,2)],{type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'medseg_zoo_'+new Date().toISOString().slice(0,10)+'.json';
+  a.download = 'data.json';
   a.click();
-  showToast('✅ 已导出 JSON','ok');
+  setTimeout(()=>{
+    showToast('📤 已导出 data.json，请上传到GitHub仓库根目录','ok');
+  },300);
 }
 
 document.getElementById('importModal').addEventListener('click',e=>{
