@@ -168,6 +168,23 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{border-color:rgba(62,207,142,.4);color:var(--accent3)}
 
+/* ZOOM LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.lightbox.open{display:flex}
+.lightbox-img{max-width:92vw;max-height:82vh;object-fit:contain;border-radius:8px;cursor:zoom-out;transition:transform .2s}
+.lightbox-img.zoomed{transform:scale(1.5);cursor:zoom-in}
+.lightbox-bar{display:flex;align-items:center;gap:12px}
+.lightbox-btn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer;transition:background .15s}
+.lightbox-btn:hover{background:rgba(255,255,255,.22)}
+.lightbox-caption{font-size:12px;color:rgba(255,255,255,.5)}
+
+/* NUMBER BADGE on card */
+.num-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:rgba(255,255,255,.7);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+/* WHITE BG toggle on gallery */
+.gallery-main.white-bg{background:#fff}
+.gallery-main.white-bg img{padding:12px}
+
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
@@ -204,6 +221,15 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
     <button class="fb" onclick="setFilter('Foundation Model',this)">Foundation</button>
     <button class="fb" onclick="setFilter('Hybrid',this)">Hybrid</button>
   </div>
+  <select id="sortSel" onchange="render()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text2);font-size:12px;outline:none;cursor:pointer">
+    <option value="newest">最新添加</option>
+    <option value="oldest">最早添加</option>
+    <option value="year_desc">年份↓</option>
+    <option value="year_asc">年份↑</option>
+    <option value="dice_desc">Dice↓</option>
+    <option value="name_asc">名称A-Z</option>
+  </select>
+  <button class="fb" id="numToggleBtn" onclick="toggleNumbers()" title="显示/隐藏编号"># 编号</button>
 </div>
 
 <div class="grid" id="grid"></div>
@@ -312,6 +338,10 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 <div class="modal">
 
   <div class="detail-img-gallery" id="detailGallery">
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:6px">
+      <button class="fb" id="bgToggleBtn" onclick="toggleGalleryBg()" style="font-size:11px;padding:4px 10px">🌓 切换背景</button>
+      <button class="fb" onclick="openLightboxFromDetail()" style="font-size:11px;padding:4px 10px">🔍 放大</button>
+    </div>
     <div class="gallery-main" id="galleryMain"></div>
     <div class="img-caption-display" id="galleryCaption"></div>
     <div class="gallery-thumbs" id="galleryThumbs"></div>
@@ -356,6 +386,18 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 </div>
 </div>
 
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-bar">
+    <button class="lightbox-btn" onclick="lbPrev(event)">← 上一张</button>
+    <span class="lightbox-caption" id="lbCaption"></span>
+    <button class="lightbox-btn" onclick="lbNext(event)">下一张 →</button>
+    <button class="lightbox-btn" onclick="closeLightbox()">✕ 关闭</button>
+  </div>
+  <img class="lightbox-img" id="lbImg" onclick="toggleZoom(event)" alt="">
+  <div style="font-size:11px;color:rgba(255,255,255,.35)">点击图片放大/缩小 · 点击外部关闭</div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -396,7 +438,8 @@ function render(){
     appendAddCard(grid); return;
   }
 
-  list.forEach(m=>{
+  const sorted = getSortedList(list);
+  sorted.forEach((m,idx)=>{
     const card = document.createElement('div');
     card.className='card';
     card.onclick=()=>openDetail(m.id);
@@ -415,6 +458,7 @@ function render(){
            <div style="font-size:11px;color:${col};opacity:.7">${m.category}</div>
          </div>`;
     const countBadge = imgs.length>1?`<div class="img-count-badge">📷 ${imgs.length}</div>`:'';
+    const numBadge = showNumbers?`<div class="num-badge">${idx+1}</div>`:'';
     const tags = (m.tags||[]).slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
     const innoPreview = m.inno_arch||m.inno_loss||'';
 
@@ -422,7 +466,7 @@ function render(){
       <div class="card-img-wrap">
         ${imgHtml}
         <span class="cat-badge ${cc}">${m.category||''}</span>
-        ${countBadge}
+        ${countBadge}${numBadge}
       </div>
       <div class="card-body">
         <div class="card-title">${m.name}</div>
@@ -694,6 +738,65 @@ function showToast(msg,type){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast show'+(type==='ok'?' ok':'');
   setTimeout(()=>t.className='toast',2400);
+}
+
+/* ── SORT & NUMBERS ── */
+let showNumbers = false;
+function toggleNumbers(){
+  showNumbers=!showNumbers;
+  document.getElementById('numToggleBtn').classList.toggle('active',showNumbers);
+  render();
+}
+function getSortedList(list){
+  const s=document.getElementById('sortSel').value;
+  const arr=[...list];
+  if(s==='oldest') return arr.reverse();
+  if(s==='year_desc') return arr.sort((a,b)=>parseInt(b.year||0)-parseInt(a.year||0));
+  if(s==='year_asc') return arr.sort((a,b)=>parseInt(a.year||0)-parseInt(b.year||0));
+  if(s==='dice_desc') return arr.sort((a,b)=>parseFloat(b.dice||0)-parseFloat(a.dice||0));
+  if(s==='name_asc') return arr.sort((a,b)=>a.name.localeCompare(b.name));
+  return arr;
+}
+
+/* ── LIGHTBOX ── */
+let lbImgs=[], lbIdx=0;
+function openLightbox(imgs,idx){
+  lbImgs=imgs; lbIdx=idx;
+  document.getElementById('lbImg').classList.remove('zoomed');
+  document.getElementById('lbImg').src=imgs[idx].data;
+  document.getElementById('lbCaption').textContent=(imgs[idx].caption||'')+` (${idx+1}/${imgs.length})`;
+  document.getElementById('lightbox').classList.add('open');
+}
+function openLightboxFromDetail(){
+  const m=models.find(x=>x.id===curDetailId);
+  if(!m||!(m.images||[]).length){ showToast('暂无图片',''); return; }
+  openLightbox(m.images, galleryIdx);
+}
+function closeLightbox(e){
+  if(e&&e.currentTarget!==e.target) return;
+  document.getElementById('lightbox').classList.remove('open');
+}
+function lbPrev(e){ e.stopPropagation(); lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length; updateLb(); }
+function lbNext(e){ e.stopPropagation(); lbIdx=(lbIdx+1)%lbImgs.length; updateLb(); }
+function updateLb(){
+  document.getElementById('lbImg').classList.remove('zoomed');
+  document.getElementById('lbImg').src=lbImgs[lbIdx].data;
+  document.getElementById('lbCaption').textContent=(lbImgs[lbIdx].caption||'')+` (${lbIdx+1}/${lbImgs.length})`;
+}
+function toggleZoom(e){ e.stopPropagation(); document.getElementById('lbImg').classList.toggle('zoomed'); }
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key==='ArrowLeft') lbPrev({stopPropagation:()=>{}});
+  if(e.key==='ArrowRight') lbNext({stopPropagation:()=>{}});
+  if(e.key==='Escape') closeLightbox({currentTarget:document.getElementById('lightbox'),target:document.getElementById('lightbox')});
+});
+
+/* ── WHITE BG TOGGLE ── */
+function toggleGalleryBg(){
+  document.getElementById('galleryMain').classList.toggle('white-bg');
+  const btn=document.getElementById('bgToggleBtn');
+  const isWhite=document.getElementById('galleryMain').classList.contains('white-bg');
+  btn.textContent=isWhite?'🌑 深色背景':'🌓 切换背景';
 }
 
 /* ── PASTE IMAGE SUPPORT ── */
