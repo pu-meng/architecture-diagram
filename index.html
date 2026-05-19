@@ -13,6 +13,11 @@
   --accent:#4f9cf9; --accent2:#7c5cfc; --accent3:#3ecf8e; --accent4:#f59e0b;
   --red:#f87171; --card-r:14px;
 }
+body.light{
+  --bg:#f4f5f7; --bg2:#ffffff; --bg3:#eef0f3; --bg4:#e5e7eb;
+  --border:rgba(0,0,0,0.08); --border2:rgba(0,0,0,0.15);
+  --text:#1a1d23; --text2:#5a6070; --text3:#9aa0ad;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:'SF Pro Display',-apple-system,'Segoe UI',sans-serif;min-height:100vh;line-height:1.6}
 
@@ -188,8 +193,57 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 .lb-zoom-label{font-size:14px;font-weight:700;color:#fff;min-width:56px;text-align:center}
 .lb-hint{font-size:12px;color:rgba(255,255,255,.4)}
 
-/* NUMBER BADGE on card */
+/* THUMBNAIL STRIP in lightbox */
+.lb-thumb-strip{display:flex;gap:6px;padding:8px 16px;background:rgba(0,0,0,.9);overflow-x:auto;flex-shrink:0;align-items:center;justify-content:center;border-top:1px solid rgba(255,255,255,.08)}
+.lb-thumb-strip:empty{display:none}
+.lb-thumb-strip::-webkit-scrollbar{height:4px}
+.lb-thumb-strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px}
+.lb-thumb{width:72px;height:52px;flex-shrink:0;border:2px solid rgba(255,255,255,.15);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color .15s;background:#000}
+.lb-thumb img{width:100%;height:100%;object-fit:contain}
+.lb-thumb.active{border-color:var(--accent)}
+.lb-thumb:hover{border-color:rgba(255,255,255,.5)}
+.lb-thumb-caption{font-size:10px;color:rgba(255,255,255,.4);text-align:center;margin-top:2px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* LIGHT MODE fixes */
+body.light header{background:rgba(244,245,247,.96)}
+body.light .card{box-shadow:0 1px 4px rgba(0,0,0,.06)}
+body.light .hero h1{background:linear-gradient(135deg,#1a1d23 30%,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+body.light .lightbox{background:#f0f0f0}
+body.light .lb-header,body.light .lb-zoom-bar,body.light .lb-thumb-strip{background:rgba(255,255,255,.95);border-color:rgba(0,0,0,.1)}
+body.light .lightbox-btn{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,.15);color:#333}
+body.light .lightbox-btn:hover{background:rgba(0,0,0,.15)}
+body.light .lb-caption,body.light .lb-zoom-label{color:#333}
+body.light .lb-hint{color:rgba(0,0,0,.4)}
 .num-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:rgba(255,255,255,.7);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+/* FULL PAGE DETAIL */
+.detail-page{position:fixed;inset:0;background:var(--bg);z-index:150;display:none;flex-direction:column;overflow-y:auto}
+.detail-page.open{display:flex}
+.dp-header{display:flex;align-items:center;gap:12px;padding:12px 2rem;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:2;flex-shrink:0}
+.dp-back{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.dp-back:hover{background:var(--bg4)}
+.dp-title{font-size:16px;font-weight:600;color:var(--text)}
+.dp-body{max-width:1200px;margin:0 auto;padding:2rem;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+.dp-col{display:flex;flex-direction:column;gap:1.2rem}
+.dp-section h3{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.dp-gallery-main{width:100%;aspect-ratio:16/9;background:var(--bg3);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:8px;cursor:zoom-in}
+.dp-gallery-main img{width:100%;height:100%;object-fit:contain;padding:8px}
+.dp-thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.dp-thumb{width:70px;height:52px;flex-shrink:0;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.dp-thumb img{width:100%;height:100%;object-fit:contain;padding:2px}
+.dp-thumb.active{border-color:var(--accent)}
+.dp-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dp-meta-item label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+.dp-meta-item p{font-size:14px;color:var(--text)}
+.dp-inno-item{background:var(--bg3);border-radius:9px;padding:12px 14px;margin-bottom:8px}
+.dp-inno-item label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px}
+.dp-inno-item p{font-size:13px;color:var(--text2);line-height:1.6}
+.dp-formula-box{background:var(--bg3);border-radius:9px;padding:14px;font-size:14px;color:var(--text);text-align:center;overflow-x:auto}
+.dp-notes-box{background:var(--bg3);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.6}
+.dp-edit-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.dp-edit-btn:hover{opacity:.88}
+.dp-del-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:9px;padding:10px 20px;font-size:13px;cursor:pointer}
+@media(max-width:800px){.dp-body{grid-template-columns:1fr}}
 
 /* WHITE BG toggle on gallery */
 .gallery-main.white-bg{background:#fff}
@@ -210,6 +264,7 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
   <div class="hright">
     <div class="stat-pill">共 <span id="totalCount">0</span> 个模型</div>
     <div class="stat-pill" id="syncStatus" style="color:var(--text3)">⏳ 同步中</div>
+    <button class="add-btn" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:18px;padding:6px 12px" onclick="toggleTheme()" id="themeBtn" title="切换明暗主题">🌙</button>
     <button class="add-btn" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onclick="openGhSync()">☁️ 推送到GitHub</button>
     <button class="add-btn" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2)" onclick="exportData()">📤 导出</button>
     <button class="add-btn" onclick="openAdd()">+ 添加模型</button>
@@ -436,6 +491,21 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
 </div>
 </div>
 
+<!-- FULL DETAIL PAGE -->
+<div class="detail-page" id="detailPage">
+  <div class="dp-header">
+    <button class="dp-back" onclick="closeDetailPage()">← 返回</button>
+    <span class="dp-title" id="dpTitle"></span>
+    <div style="flex:1"></div>
+    <button class="dp-edit-btn" id="dpEditBtn">✏️ 编辑</button>
+    <button class="dp-del-btn" id="dpDelBtn">删除</button>
+  </div>
+  <div class="dp-body" id="dpBody">
+    <div class="dp-col" id="dpLeft"></div>
+    <div class="dp-col" id="dpRight"></div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <div class="lb-header" id="lbHeader">
@@ -455,6 +525,7 @@ header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-i
       <img class="lightbox-img" id="lbImg" alt="">
     </div>
   </div>
+  <div class="lb-thumb-strip" id="lbThumbStrip"></div>
   <div class="lb-zoom-bar" id="lbZoomBar">
     <button class="lightbox-btn" onclick="lbZoom(-0.15)">－ 缩小</button>
     <span class="lb-zoom-label" id="lbZoomLabel">100%</span>
@@ -736,8 +807,137 @@ function saveModel(){
   showToast(editingId?'✅ 已更新':'✅ 模型已添加','ok');
 }
 
-/* ── DETAIL MODAL ── */
-let galleryIdx=0;
+/* ── DETAIL PAGE (full screen) ── */
+let dpGalleryIdx=0;
+let dpImgs=[];
+
+function openDetail(id){
+  const m=models.find(x=>x.id===id);
+  if(!m) return;
+  curDetailId=id;
+  dpImgs=m.images||[];
+  dpGalleryIdx=0;
+
+  document.getElementById('dpTitle').textContent=m.name;
+  document.getElementById('dpEditBtn').onclick=()=>{ closeDetailPage(); openAdd(id); };
+  document.getElementById('dpDelBtn').onclick=()=>{
+    if(!confirm('确认删除？')) return;
+    models=models.filter(x=>x.id!==id);
+    saveData(); render(); closeDetailPage();
+    showToast('已删除','ok');
+  };
+
+  const catColors={'U-Net变体':'#4f9cf9','CNN/FCN':'#3ecf8e','Transformer':'#a78bfa','Attention':'#fcd34d','Foundation Model':'#fca5a5','Hybrid':'#f9a8d4'};
+  const col=catColors[m.category]||'#9499a8';
+
+  // LEFT column: gallery + meta
+  const left=document.getElementById('dpLeft');
+  left.innerHTML='';
+
+  // Gallery
+  const galleryDiv=document.createElement('div');
+  const mainDiv=document.createElement('div'); mainDiv.className='dp-gallery-main'; mainDiv.id='dpGalleryMain';
+  if(dpImgs.length){
+    const img=document.createElement('img'); img.src=dpImgs[0].data; img.alt=m.name;
+    mainDiv.appendChild(img);
+    mainDiv.onclick=()=>openLightbox(dpImgs,dpGalleryIdx);
+  } else {
+    mainDiv.style.flexDirection='column'; mainDiv.style.gap='10px';
+    mainDiv.innerHTML=`<div style="width:56px;height:56px;border-radius:14px;background:${col}22;border:1.5px solid ${col}44;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:${col}">${m.name.replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase()||'?'}</div><div style="font-size:13px;color:${col}">${m.category}</div>`;
+  }
+  galleryDiv.appendChild(mainDiv);
+
+  if(dpImgs.length>1){
+    const thumbsDiv=document.createElement('div'); thumbsDiv.className='dp-thumbs';
+    dpImgs.forEach((im,i)=>{
+      const t=document.createElement('div'); t.className='dp-thumb'+(i===0?' active':'');
+      t.innerHTML=`<img src="${im.data}">`;
+      t.onclick=()=>{
+        dpGalleryIdx=i;
+        const mainImg=document.querySelector('#dpGalleryMain img');
+        if(mainImg) mainImg.src=im.data;
+        document.querySelectorAll('.dp-thumb').forEach((th,j)=>th.classList.toggle('active',j===i));
+      };
+      thumbsDiv.appendChild(t);
+    });
+    galleryDiv.appendChild(thumbsDiv);
+  }
+  left.appendChild(galleryDiv);
+
+  // Meta
+  const metaDiv=document.createElement('div'); metaDiv.className='dp-section';
+  metaDiv.innerHTML=`<h3>基本信息</h3>
+    <div class="dp-meta-grid">
+      <div class="dp-meta-item"><label>类别</label><p style="color:${col}">${m.category||'—'}</p></div>
+      <div class="dp-meta-item"><label>年份</label><p>${m.year||'—'}</p></div>
+      <div class="dp-meta-item"><label>期刊/会议</label><p>${m.venue||'—'}</p></div>
+      <div class="dp-meta-item"><label>数据集</label><p>${m.dataset||'—'}</p></div>
+      <div class="dp-meta-item"><label>最佳 Dice</label><p style="color:var(--accent3)">${m.dice?m.dice+'%':'—'}</p></div>
+    </div>`;
+  if(m.paper){
+    const p=document.createElement('div'); p.style.marginTop='10px';
+    p.innerHTML=m.link?`<a href="${m.link}" target="_blank" style="color:var(--accent);font-size:13px;text-decoration:none">${m.paper}</a>`:`<span style="font-size:13px;color:var(--text2)">${m.paper}</span>`;
+    metaDiv.appendChild(p);
+  }
+  left.appendChild(metaDiv);
+
+  // Tags
+  if((m.tags||[]).length){
+    const tagsDiv=document.createElement('div');
+    tagsDiv.innerHTML=(m.tags||[]).map(t=>`<span class="tag" style="font-size:12px;padding:3px 10px;margin-right:4px">${t}</span>`).join('');
+    left.appendChild(tagsDiv);
+  }
+
+  // RIGHT column: innovation + formula + notes
+  const right=document.getElementById('dpRight');
+  right.innerHTML='';
+
+  const innoRows=[
+    ['输入/预处理',m.inno_input],['网络结构',m.inno_arch],
+    ['损失函数',m.inno_loss],['训练策略',m.inno_other]
+  ].filter(r=>r[1]);
+
+  if(innoRows.length){
+    const innoDiv=document.createElement('div'); innoDiv.className='dp-section';
+    innoDiv.innerHTML='<h3>💡 创新点</h3>';
+    innoRows.forEach(r=>{
+      const item=document.createElement('div'); item.className='dp-inno-item';
+      item.innerHTML=`<label>${r[0]}</label><p>${r[1]}</p>`;
+      innoDiv.appendChild(item);
+    });
+    right.appendChild(innoDiv);
+  }
+
+  if(m.formula){
+    const fDiv=document.createElement('div'); fDiv.className='dp-section';
+    fDiv.innerHTML='<h3>📐 关键公式</h3>';
+    const fBox=document.createElement('div'); fBox.className='dp-formula-box';
+    fBox.innerHTML=`\\(${m.formula}\\)`;
+    fDiv.appendChild(fBox);
+    right.appendChild(fDiv);
+    if(window.MathJax) setTimeout(()=>MathJax.typesetPromise([fBox]).catch(()=>{}),100);
+  }
+
+  if(m.notes){
+    const nDiv=document.createElement('div'); nDiv.className='dp-section';
+    nDiv.innerHTML='<h3>📝 备注</h3>';
+    const nBox=document.createElement('div'); nBox.className='dp-notes-box';
+    nBox.textContent=m.notes;
+    nDiv.appendChild(nBox);
+    right.appendChild(nDiv);
+  }
+
+  document.getElementById('detailPage').classList.add('open');
+  document.getElementById('detailPage').scrollTop=0;
+}
+
+function closeDetailPage(){
+  document.getElementById('detailPage').classList.remove('open');
+}
+
+/* Keep old modal functions for edit use */
+function openDetailModal(id){ openDetail(id); }
+function closeDetail(){ closeDetailPage(); }
 
 function openDetail(id){
   const m=models.find(x=>x.id===id);
@@ -904,6 +1104,19 @@ document.getElementById('ghModal').addEventListener('click',e=>{
   if(e.target===document.getElementById('ghModal')) closeGhSync();
 });
 
+/* ── THEME TOGGLE ── */
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+  localStorage.setItem('theme',isLight?'light':'dark');
+}
+(()=>{
+  if(localStorage.getItem('theme')==='light'){
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent='☀️';
+  }
+})();
+
 /* ── LIGHTBOX - Edge PDF style ── */
 let lbImgs=[], lbIdx=0;
 let lbScale=1;
@@ -918,6 +1131,7 @@ function openLightbox(imgs,idx){
   document.getElementById('lightbox').classList.add('open');
   lbFullMode=false;
   showLbBars();
+  lbRenderThumbs();
   img.onload=()=>{ lbFit(); img.onload=null; };
   if(img.complete && img.naturalWidth) lbFit();
 }
@@ -966,6 +1180,34 @@ document.getElementById('lbBody').addEventListener('mousemove',()=>{
   if(lbFullMode){ showLbBars(); hideLbBarsDelayed(); }
 });
 
+function lbRenderThumbs(){
+  const strip=document.getElementById('lbThumbStrip');
+  strip.innerHTML='';
+  if(lbImgs.length<=1){ strip.style.display='none'; return; }
+  strip.style.display='flex';
+  lbImgs.forEach((im,i)=>{
+    const wrap=document.createElement('div');
+    wrap.style.display='flex';wrap.style.flexDirection='column';wrap.style.alignItems='center';
+    const t=document.createElement('div');
+    t.className='lb-thumb'+(i===lbIdx?' active':'');
+    t.innerHTML=`<img src="${im.data}" alt="图${i+1}">`;
+    t.onclick=()=>{ lbIdx=i; lbUpdateImg(); lbUpdateThumbActive(); };
+    wrap.appendChild(t);
+    if(im.caption){
+      const c=document.createElement('div');
+      c.className='lb-thumb-caption'; c.textContent=im.caption;
+      wrap.appendChild(c);
+    }
+    strip.appendChild(wrap);
+  });
+}
+function lbUpdateThumbActive(){
+  document.querySelectorAll('.lb-thumb').forEach((t,i)=>t.classList.toggle('active',i===lbIdx));
+  const strip=document.getElementById('lbThumbStrip');
+  const active=strip.querySelectorAll('.lb-thumb')[lbIdx];
+  if(active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+}
+
 /* NAV */
 function lbPrev(e){ if(e)e.stopPropagation(); lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length; lbUpdateImg(); }
 function lbNext(e){ if(e)e.stopPropagation(); lbIdx=(lbIdx+1)%lbImgs.length; lbUpdateImg(); }
@@ -974,6 +1216,7 @@ function lbUpdateImg(){
   img.src=lbImgs[lbIdx].data;
   document.getElementById('lbCaption').textContent=(lbImgs[lbIdx].caption||'')+` (${lbIdx+1}/${lbImgs.length})`;
   document.getElementById('lbBody').scrollTop=0;
+  lbUpdateThumbActive();
   img.onload=()=>{ lbFit(); img.onload=null; };
   if(img.complete && img.naturalWidth) lbFit();
 }
