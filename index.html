@@ -1043,16 +1043,17 @@ header {
     background: rgba(255, 255, 255, .28);
 }
 
+/* 修改点1：允许水平滚动 */
 .lb-body {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: auto;         /* 之前是 overflow-y: auto; overflow-x: hidden; 现在改为 auto 允许水平滚动 */
     position: relative;
     cursor: default;
 }
 
 .lb-body::-webkit-scrollbar {
     width: 8px;
+    height: 8px;            /* 添加水平滚动条高度 */
 }
 
 .lb-body::-webkit-scrollbar-track {
@@ -1064,16 +1065,17 @@ header {
     border-radius: 4px;
 }
 
+/* 修改点2：图片包裹层不限制宽度，以便图片可以超出容器 */
 .lb-img-wrap {
-    width: 100%;
     display: flex;
     justify-content: center;
     padding: 16px 0;
-    transform-origin: top center;
+    min-width: 100%;        /* 确保至少占满容器，同时允许内容撑开 */
+    /* 移除之前的 width: 100% */
 }
 
 .lightbox-img {
-    max-width: 100%;
+    max-width: none;        /* 确保图片可以自由放大，不限制最大宽度 */
     height: auto;
     user-select: none;
     pointer-events: none;
@@ -1474,6 +1476,7 @@ body.light .lb-hint {
 
 ::-webkit-scrollbar {
     width: 5px;
+    height: 5px;            /* 全局增加水平滚动条高度 */
 }
 
 ::-webkit-scrollbar-track {
@@ -1687,7 +1690,7 @@ input[list]::-webkit-calendar-picker-indicator {
             <span class="lb-caption" id="lbCaption"></span>
         </div>
         <div class="lb-header-left">
-            <span class="lb-hint">Ctrl+滚轮缩放 · 鼠标滚动上下 · 双击放大</span>
+            <span class="lb-hint">Ctrl+滚轮缩放 · Shift+滚轮左右平移 · 双击放大</span>
             <button class="lightbox-btn" id="lbFullBtn" onclick="toggleLbFull()">⛶ 全屏</button>
             <button class="lightbox-btn" onclick="closeLightbox()">✕ 关闭</button>
         </div>
@@ -2484,6 +2487,7 @@ input[list]::-webkit-calendar-picker-indicator {
         lbScale = Math.min((body.clientWidth - 32) / img.naturalWidth, 1);
         lbApplyScale();
         body.scrollTop = 0;
+        body.scrollLeft = 0;     // 适应窗口时重置水平滚动位置
     }
 
     function lbActual() { lbScale = 1;
@@ -2498,14 +2502,17 @@ input[list]::-webkit-calendar-picker-indicator {
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             const body = document.getElementById('lbBody');
-            const scrollRatio = body.scrollTop / (body.scrollHeight - body.clientHeight || 1);
+            const scrollRatioX = body.scrollLeft / (body.scrollWidth - body.clientWidth || 1);
+            const scrollRatioY = body.scrollTop / (body.scrollHeight - body.clientHeight || 1);
             const delta = e.deltaY > 0 ? -0.08 : 0.08;
             lbScale = Math.max(0.05, Math.min(10, lbScale + delta));
             lbApplyScale();
             requestAnimationFrame(() => {
-                body.scrollTop = scrollRatio * (body.scrollHeight - body.clientHeight);
+                body.scrollLeft = scrollRatioX * (body.scrollWidth - body.clientWidth);
+                body.scrollTop = scrollRatioY * (body.scrollHeight - body.clientHeight);
             });
         }
+        // 普通滚轮不做处理，浏览器会自动滚动（包括Shift+滚轮的水平滚动）
     }, { passive: false });
 
     document.getElementById('lbBody').addEventListener('dblclick', e => {
