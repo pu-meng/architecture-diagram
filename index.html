@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedSeg Architecture Zoo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+<style>
+:root {
+  --bg:#0e0f12; --bg2:#16181e; --bg3:#1e2028; --bg4:#252830;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
+  --text:#e8eaf0; --text2:#9499a8; --text3:#5a5f70;
+  --accent:#4f9cf9; --accent2:#7c5cfc; --accent3:#3ecf8e; --accent4:#f59e0b;
+  --red:#f87171; --card-r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'SF Pro Display',-apple-system,'Segoe UI',sans-serif;min-height:100vh;line-height:1.6}
+
+/* HEADER */
+header{border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;background:rgba(14,15,18,0.94);backdrop-filter:blur(14px);z-index:100}
+.logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:-.3px}
+.logo-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.hright{display:flex;align-items:center;gap:10px}
+.stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:12px;color:var(--text2)}
+.stat-pill span{color:var(--accent);font-weight:600}
+
+/* HERO */
+.hero{padding:3rem 2rem 2rem;max-width:1200px;margin:0 auto}
+.hero h1{font-size:36px;font-weight:700;letter-spacing:-1px;line-height:1.2;background:linear-gradient(135deg,#e8eaf0 30%,#7ab8fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+.hero p{color:var(--text2);font-size:15px;max-width:580px}
+
+/* TOOLBAR */
+.toolbar{max-width:1200px;margin:0 auto;padding:0 2rem 1.5rem;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.search-box:focus{border-color:var(--accent)}
+.search-box::placeholder{color:var(--text3)}
+.filter-group{display:flex;gap:5px;flex-wrap:wrap}
+.fb{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 13px;color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.fb:hover{border-color:var(--border2);color:var(--text)}
+.fb.active{background:rgba(79,156,249,.15);border-color:rgba(79,156,249,.5);color:var(--accent)}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .15s}
+.add-btn:hover{opacity:.88}
+
+/* GRID */
+.grid{max-width:1200px;margin:0 auto;padding:0 2rem 4rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);overflow:hidden;transition:border-color .2s,transform .2s;cursor:pointer;display:flex;flex-direction:column}
+.card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-img-wrap{width:100%;aspect-ratio:16/9;background:var(--bg3);border-bottom:1px solid var(--border);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.card-img-wrap img{width:100%;height:100%;object-fit:contain;padding:8px}
+.placeholder-icon{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3)}
+.img-count-badge{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px}
+.cat-badge{position:absolute;top:8px;left:8px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.3px;text-transform:uppercase}
+.cat-unet{background:rgba(79,156,249,.2);color:#7ab8fc}
+.cat-transformer{background:rgba(124,92,252,.2);color:#a78bfa}
+.cat-cnn{background:rgba(62,207,142,.2);color:#6ee7b7}
+.cat-attention{background:rgba(245,158,11,.2);color:#fcd34d}
+.cat-foundation{background:rgba(239,68,68,.2);color:#fca5a5}
+.cat-hybrid{background:rgba(236,72,153,.2);color:#f9a8d4}
+.card-body{padding:15px;flex:1;display:flex;flex-direction:column;gap:7px}
+.card-title{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.card-paper{font-size:11px;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-inno{font-size:11px;color:var(--text3);font-style:italic;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.card-tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{background:rgba(79,156,249,.1);color:#7ab8fc;border-radius:5px;padding:2px 7px;font-size:10px}
+.card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:9px;border-top:1px solid var(--border)}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--text2)}
+.chip-year{background:rgba(79,156,249,.1);color:var(--accent);border-color:rgba(79,156,249,.2)}
+.chip-dice{background:rgba(62,207,142,.1);color:var(--accent3);border-color:rgba(62,207,142,.2)}
+
+/* ADD CARD */
+.add-card{background:var(--bg2);border:1.5px dashed var(--border2);border-radius:var(--card-r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:260px;cursor:pointer;transition:all .2s;color:var(--text3);font-size:13px}
+.add-card:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,156,249,.04)}
+.add-card-icon{width:42px;height:42px;border:1.5px dashed currentColor;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px}
+
+/* MODAL BASE */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;padding:2rem}
+.modal h2{font-size:19px;font-weight:600;margin-bottom:1.4rem;color:var(--text)}
+.modal::-webkit-scrollbar{width:5px}
+.modal::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fg label{font-size:11px;color:var(--text2);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+.fg input,.fg select,.fg textarea{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s;font-family:inherit;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent)}
+.fg textarea{resize:vertical;min-height:72px}
+.fg select option{background:#1e2028}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* SECTION DIVIDER */
+.sdiv{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:1.4rem 0 .8rem;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+
+/* IMAGE UPLOAD MULTI */
+.img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.img-thumb{aspect-ratio:4/3;background:var(--bg3);border:1px solid var(--border);border-radius:9px;overflow:hidden;position:relative;cursor:pointer}
+.img-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+.img-thumb .del-img{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(239,68,68,.8);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;opacity:0;transition:opacity .15s;border:none;cursor:pointer}
+.img-thumb:hover .del-img{opacity:1}
+.add-img-slot{aspect-ratio:4/3;background:var(--bg3);border:1.5px dashed var(--border2);border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .15s;color:var(--text3);font-size:11px;position:relative}
+.add-img-slot:hover{border-color:var(--accent);color:var(--accent)}
+.add-img-slot input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* IMG CAPTION */
+.img-caption-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;color:var(--text2)}
+
+/* INNOVATION FIELDS */
+.inno-fields{display:flex;flex-direction:column;gap:10px}
+.inno-item{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:12px}
+.inno-item label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:block}
+.inno-item textarea{background:transparent;border:none;color:var(--text);font-size:12px;width:100%;outline:none;resize:none;min-height:48px;font-family:inherit;line-height:1.5}
+
+/* FORMULA */
+.formula-area{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:12px}
+.formula-input{background:transparent;border:none;color:var(--accent3);font-family:'SF Mono',monospace;font-size:12px;width:100%;outline:none;resize:none;min-height:52px;line-height:1.6}
+.formula-preview{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);min-height:32px;font-size:13px;color:var(--text2);text-align:center}
+.formula-hint{font-size:10px;color:var(--text3);margin-top:5px}
+
+/* MODAL ACTIONS */
+.mactions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem}
+.btn-cancel{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:9px;padding:9px 20px;font-size:13px;cursor:pointer;transition:border-color .15s}
+.btn-cancel:hover{border-color:var(--border2)}
+.btn-save{background:var(--accent);border:none;color:#fff;border-radius:9px;padding:9px 24px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-save:hover{opacity:.88}
+.btn-del{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:9px;padding:9px 20px;font-size:13px;cursor:pointer;transition:background .15s}
+.btn-del:hover{background:rgba(239,68,68,.2)}
+
+/* DETAIL MODAL */
+.detail-img-gallery{margin-bottom:1.4rem}
+.gallery-main{width:100%;aspect-ratio:16/9;background:var(--bg3);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.gallery-main img{width:100%;height:100%;object-fit:contain;padding:8px}
+.gallery-main .no-img{color:var(--text3);font-size:13px}
+.gallery-thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.gallery-thumbs::-webkit-scrollbar{height:3px}
+.gallery-thumbs::-webkit-scrollbar-thumb{background:var(--border2)}
+.gthumb{width:64px;height:48px;flex-shrink:0;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.gthumb img{width:100%;height:100%;object-fit:contain;padding:2px}
+.gthumb.active{border-color:var(--accent)}
+.img-caption-display{font-size:11px;color:var(--text3);text-align:center;min-height:16px;margin-top:4px}
+
+.detail-meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.2rem}
+.dmi label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+.dmi p{font-size:13px;color:var(--text)}
+
+.detail-section{margin-bottom:1.2rem}
+.detail-section h3{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+
+.inno-display{background:var(--bg3);border-radius:9px;padding:12px 14px}
+.inno-row{display:flex;gap:10px;margin-bottom:8px;font-size:12px}
+.inno-row:last-child{margin-bottom:0}
+.inno-label{color:var(--text3);min-width:80px;flex-shrink:0;font-size:11px;padding-top:1px}
+.inno-val{color:var(--text2);line-height:1.5}
+
+.formula-display{background:var(--bg3);border-radius:9px;padding:14px;font-size:13px;color:var(--text);text-align:center;overflow-x:auto}
+
+.paper-link{color:var(--accent);text-decoration:none;font-size:12px}
+.paper-link:hover{text-decoration:underline}
+
+/* EMPTY */
+.empty{grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--text3)}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:11px 18px;font-size:13px;color:var(--text);z-index:999;transform:translateY(16px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(62,207,142,.4);color:var(--accent3)}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🧠</div>
+    MedSeg Architecture Zoo
+  </div>
+  <div class="hright">
+    <div class="stat-pill">共 <span id="totalCount">0</span> 个模型</div>
+    <button class="add-btn" onclick="openAdd()">+ 添加模型</button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>医学图像分割<br>架构图库</h1>
+  <p>收集肝脏肿瘤分割及医学图像分割领域深度学习模型架构图，支持多图、公式、结构化创新点</p>
+</div>
+
+<div class="toolbar">
+  <input class="search-box" id="searchInput" placeholder="搜索模型名称、论文、数据集、标签…" oninput="render()">
+  <div class="filter-group">
+    <button class="fb active" onclick="setFilter('all',this)">全部</button>
+    <button class="fb" onclick="setFilter('U-Net变体',this)">U-Net变体</button>
+    <button class="fb" onclick="setFilter('Transformer',this)">Transformer</button>
+    <button class="fb" onclick="setFilter('CNN/FCN',this)">CNN/FCN</button>
+    <button class="fb" onclick="setFilter('Attention',this)">Attention</button>
+    <button class="fb" onclick="setFilter('Foundation Model',this)">Foundation</button>
+    <button class="fb" onclick="setFilter('Hybrid',this)">Hybrid</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- ══ ADD/EDIT MODAL ══ -->
+<div class="overlay" id="addModal">
+<div class="modal">
+  <h2 id="modalTitle">➕ 添加新模型</h2>
+
+  <div class="sdiv">📌 基本信息</div>
+  <div class="fg-row">
+    <div class="fg"><label>模型名称 *</label><input id="f-name" placeholder="如 U-Net、H-DenseUNet"></div>
+    <div class="fg"><label>类别</label>
+      <select id="f-cat">
+        <option>U-Net变体</option><option>CNN/FCN</option><option>Transformer</option>
+        <option>Attention</option><option>Foundation Model</option><option>Hybrid</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label>论文标题</label><input id="f-paper" placeholder="完整论文标题"></div>
+  <div class="fg-row3">
+    <div class="fg"><label>年份</label><input id="f-year" type="number" placeholder="2024" min="2014" max="2030"></div>
+    <div class="fg"><label>期刊/会议</label><input id="f-venue" placeholder="MICCAI / TMI / MIA"></div>
+    <div class="fg"><label>论文链接</label><input id="f-link" placeholder="arXiv / DOI URL"></div>
+  </div>
+  <div class="fg-row3">
+    <div class="fg"><label>数据集</label><input id="f-dataset" placeholder="LiTS, 3D-IRCADb"></div>
+    <div class="fg"><label>最佳 Dice (%)</label><input id="f-dice" placeholder="82.3"></div>
+    <div class="fg"><label>标签（逗号分隔）</label><input id="f-tags" placeholder="3D, boundary, multi-scale"></div>
+  </div>
+
+  <div class="sdiv">🖼️ 架构图（最多6张）</div>
+  <div class="img-grid" id="imgGrid"></div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:4px">每张图可添加说明（如"整体架构图"、"Attention模块细节"）</div>
+
+  <div class="sdiv">💡 创新点（结构化）</div>
+  <div class="inno-fields">
+    <div class="inno-item">
+      <label>输入/预处理创新</label>
+      <textarea id="f-inno-input" placeholder="如：使用多相位CT输入、HU值窗口化策略…"></textarea>
+    </div>
+    <div class="inno-item">
+      <label>网络结构创新</label>
+      <textarea id="f-inno-arch" placeholder="如：在skip connection中加入Attention Gate、用Fractal结构替代标准ResBlock…"></textarea>
+    </div>
+    <div class="inno-item">
+      <label>损失函数创新</label>
+      <textarea id="f-inno-loss" placeholder="如：Dice + Boundary Loss组合、深度监督…"></textarea>
+    </div>
+    <div class="inno-item">
+      <label>训练策略/其他</label>
+      <textarea id="f-inno-other" placeholder="如：课程学习、多任务学习（分割+分类）…"></textarea>
+    </div>
+  </div>
+
+  <div class="sdiv">📐 关键公式（LaTeX）</div>
+  <div class="formula-area">
+    <textarea class="formula-input" id="f-formula" placeholder="输入LaTeX公式，如：L = L_{Dice} + \lambda L_{boundary}" oninput="previewFormula()"></textarea>
+    <div class="formula-preview" id="formulaPreview"><span style="color:var(--text3);font-size:11px">公式预览将显示在此处</span></div>
+    <div class="formula-hint">支持标准LaTeX，例如：L_{total} = \alpha L_{Dice} + \beta L_{CE} + \gamma L_{boundary}</div>
+  </div>
+
+  <div class="sdiv">📝 备注/个人观察</div>
+  <div class="fg"><textarea id="f-notes" placeholder="你对这个模型的观察、局限性、与你研究的关联…" style="min-height:80px"></textarea></div>
+
+  <div class="mactions">
+    <button class="btn-cancel" onclick="closeAdd()">取消</button>
+    <button class="btn-save" onclick="saveModel()">保存</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ DETAIL MODAL ══ -->
+<div class="overlay" id="detailModal">
+<div class="modal">
+
+  <div class="detail-img-gallery" id="detailGallery">
+    <div class="gallery-main" id="galleryMain"></div>
+    <div class="img-caption-display" id="galleryCaption"></div>
+    <div class="gallery-thumbs" id="galleryThumbs"></div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:1rem">
+    <h2 id="detailName" style="font-size:22px;letter-spacing:-.5px"></h2>
+    <span id="detailCatBadge" style="font-size:11px;padding:3px 10px;border-radius:20px"></span>
+  </div>
+
+  <div class="detail-meta-grid">
+    <div class="dmi"><label>年份</label><p id="d-year"></p></div>
+    <div class="dmi"><label>期刊/会议</label><p id="d-venue"></p></div>
+    <div class="dmi"><label>数据集</label><p id="d-dataset"></p></div>
+    <div class="dmi"><label>最佳 Dice</label><p id="d-dice" style="color:var(--accent3)"></p></div>
+    <div class="dmi" style="grid-column:2/-1"><label>论文</label><p id="d-paper" style="font-size:12px;color:var(--text2);line-height:1.4"></p></div>
+  </div>
+
+  <div class="detail-section" id="d-inno-section">
+    <h3>💡 创新点</h3>
+    <div class="inno-display" id="d-inno"></div>
+  </div>
+
+  <div class="detail-section" id="d-formula-section">
+    <h3>📐 关键公式</h3>
+    <div class="formula-display" id="d-formula"></div>
+  </div>
+
+  <div class="detail-section" id="d-notes-section">
+    <h3>📝 备注</h3>
+    <div style="background:var(--bg3);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.6" id="d-notes"></div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem" id="d-tags"></div>
+
+  <div class="mactions">
+    <button class="btn-del" id="d-del-btn">删除</button>
+    <div style="flex:1"></div>
+    <button class="btn-cancel" id="d-edit-btn" style="color:var(--accent);border-color:rgba(79,156,249,.3)">编辑</button>
+    <button class="btn-cancel" onclick="closeDetail()">关闭</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'medseg_zoo_v2';
+let models = [];
+let curFilter = 'all';
+let curDetailId = null;
+let editingId = null;
+let formImgs = []; // [{data, caption}]
+
+const catClass = {
+  'U-Net变体':'cat-unet','CNN/FCN':'cat-cnn','Transformer':'cat-transformer',
+  'Attention':'cat-attention','Foundation Model':'cat-foundation','Hybrid':'cat-hybrid'
+};
+
+/* ── STORAGE ── */
+function loadData(){
+  try{ models = JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ models=[]; }
+  render();
+}
+function saveData(){ localStorage.setItem(KEY,JSON.stringify(models)); }
+
+/* ── RENDER ── */
+function render(){
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  document.getElementById('totalCount').textContent = models.length;
+
+  const list = models.filter(m=>{
+    const mc = curFilter==='all'||m.category===curFilter;
+    const mq = !q||[m.name,m.paper,m.dataset,...(m.tags||[])].join(' ').toLowerCase().includes(q);
+    return mc&&mq;
+  });
+
+  if(list.length===0&&models.length>0){
+    grid.innerHTML='<div class="empty">没有找到匹配的模型</div>';
+    appendAddCard(grid); return;
+  }
+
+  list.forEach(m=>{
+    const card = document.createElement('div');
+    card.className='card';
+    card.onclick=()=>openDetail(m.id);
+    const imgs = m.images||[];
+    const firstImg = imgs[0];
+    const cc = catClass[m.category]||'cat-cnn';
+    const imgHtml = firstImg
+      ? `<img src="${firstImg.data}" alt="${m.name}">`
+      : `<div class="placeholder-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg><span style="font-size:11px">暂无图片</span></div>`;
+    const countBadge = imgs.length>1?`<div class="img-count-badge">📷 ${imgs.length}</div>`:'';
+    const tags = (m.tags||[]).slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('');
+    const innoPreview = m.inno_arch||m.inno_loss||'';
+
+    card.innerHTML=`
+      <div class="card-img-wrap">
+        ${imgHtml}
+        <span class="cat-badge ${cc}">${m.category||''}</span>
+        ${countBadge}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${m.name}</div>
+        ${m.paper?`<div class="card-paper">${m.paper}</div>`:''}
+        ${innoPreview?`<div class="card-inno">${innoPreview}</div>`:''}
+        ${tags?`<div class="card-tags">${tags}</div>`:''}
+        <div class="card-meta">
+          ${m.year?`<span class="chip chip-year">${m.year}</span>`:''}
+          ${m.venue?`<span class="chip">${m.venue}</span>`:''}
+          ${m.dataset?`<span class="chip">${m.dataset}</span>`:''}
+          ${m.dice?`<span class="chip chip-dice">Dice ${m.dice}%</span>`:''}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  appendAddCard(grid);
+}
+
+function appendAddCard(grid){
+  const ac=document.createElement('div');
+  ac.className='add-card'; ac.onclick=openAdd;
+  ac.innerHTML='<div class="add-card-icon">+</div><span>添加模型</span>';
+  grid.appendChild(ac);
+}
+
+function setFilter(cat,btn){
+  curFilter=cat;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+/* ── ADD / EDIT MODAL ── */
+function openAdd(id){
+  editingId = id||null;
+  document.getElementById('modalTitle').textContent = id?'✏️ 编辑模型':'➕ 添加新模型';
+  formImgs=[];
+
+  if(id){
+    const m = models.find(x=>x.id===id);
+    if(!m)return;
+    formImgs = (m.images||[]).map(i=>({...i}));
+    document.getElementById('f-name').value=m.name||'';
+    document.getElementById('f-cat').value=m.category||'U-Net变体';
+    document.getElementById('f-paper').value=m.paper||'';
+    document.getElementById('f-year').value=m.year||'';
+    document.getElementById('f-venue').value=m.venue||'';
+    document.getElementById('f-link').value=m.link||'';
+    document.getElementById('f-dataset').value=m.dataset||'';
+    document.getElementById('f-dice').value=m.dice||'';
+    document.getElementById('f-tags').value=(m.tags||[]).join(', ');
+    document.getElementById('f-inno-input').value=m.inno_input||'';
+    document.getElementById('f-inno-arch').value=m.inno_arch||'';
+    document.getElementById('f-inno-loss').value=m.inno_loss||'';
+    document.getElementById('f-inno-other').value=m.inno_other||'';
+    document.getElementById('f-formula').value=m.formula||'';
+    document.getElementById('f-notes').value=m.notes||'';
+  } else {
+    ['f-name','f-paper','f-year','f-venue','f-link','f-dataset','f-dice','f-tags',
+     'f-inno-input','f-inno-arch','f-inno-loss','f-inno-other','f-formula','f-notes']
+     .forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-cat').value='U-Net变体';
+  }
+
+  renderImgGrid();
+  document.getElementById('formulaPreview').innerHTML='<span style="color:var(--text3);font-size:11px">公式预览将显示在此处</span>';
+  document.getElementById('addModal').classList.add('open');
+  if(id) setTimeout(previewFormula,300);
+}
+
+function closeAdd(){ document.getElementById('addModal').classList.remove('open'); }
+
+/* IMAGE GRID IN FORM */
+function renderImgGrid(){
+  const g = document.getElementById('imgGrid');
+  g.innerHTML='';
+  formImgs.forEach((img,i)=>{
+    const d=document.createElement('div'); d.className='img-thumb';
+    d.innerHTML=`<img src="${img.data}" alt="图${i+1}">
+      <button class="del-img" onclick="removeImg(${i},event)">×</button>`;
+    g.appendChild(d);
+    const capRow=document.createElement('div'); capRow.className='img-caption-row';
+    const inp=document.createElement('input');
+    inp.value=img.caption||''; inp.placeholder=`图${i+1}说明（如"整体架构"）`;
+    inp.style.cssText='flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 10px;color:var(--text);font-size:11px;outline:none;font-family:inherit';
+    inp.oninput=e=>{ formImgs[i].caption=e.target.value; };
+    capRow.appendChild(inp);
+    g.appendChild(capRow);
+  });
+
+  if(formImgs.length<6){
+    const slot=document.createElement('div'); slot.className='add-img-slot';
+    slot.innerHTML=`<input type="file" accept="image/*" multiple onchange="addImgs(event)">
+      <div style="font-size:22px;opacity:.5">+</div>
+      <span>上传图片</span>`;
+    g.appendChild(slot);
+  }
+}
+
+function addImgs(e){
+  const files=[...e.target.files];
+  let remaining=6-formImgs.length;
+  files.slice(0,remaining).forEach(file=>{
+    const r=new FileReader();
+    r.onload=ev=>{ formImgs.push({data:ev.target.result,caption:''}); renderImgGrid(); };
+    r.readAsDataURL(file);
+  });
+  e.target.value='';
+}
+
+function removeImg(i,e){
+  e.stopPropagation();
+  formImgs.splice(i,1);
+  renderImgGrid();
+}
+
+/* FORMULA PREVIEW */
+let fTimer;
+function previewFormula(){
+  clearTimeout(fTimer);
+  fTimer=setTimeout(()=>{
+    const val=document.getElementById('f-formula').value.trim();
+    const prev=document.getElementById('formulaPreview');
+    if(!val){ prev.innerHTML='<span style="color:var(--text3);font-size:11px">公式预览将显示在此处</span>'; return; }
+    prev.innerHTML=`\\(${val}\\)`;
+    if(window.MathJax) MathJax.typesetPromise([prev]).catch(()=>{});
+  },500);
+}
+
+/* SAVE */
+function saveModel(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){ showToast('请填写模型名称','err'); return; }
+  const tagsRaw=document.getElementById('f-tags').value.trim();
+  const tags=tagsRaw?tagsRaw.split(',').map(t=>t.trim()).filter(Boolean):[];
+
+  const obj={
+    id: editingId||Date.now().toString(),
+    name, category:document.getElementById('f-cat').value,
+    paper:document.getElementById('f-paper').value.trim(),
+    year:document.getElementById('f-year').value.trim(),
+    venue:document.getElementById('f-venue').value.trim(),
+    link:document.getElementById('f-link').value.trim(),
+    dataset:document.getElementById('f-dataset').value.trim(),
+    dice:document.getElementById('f-dice').value.trim(),
+    tags,
+    inno_input:document.getElementById('f-inno-input').value.trim(),
+    inno_arch:document.getElementById('f-inno-arch').value.trim(),
+    inno_loss:document.getElementById('f-inno-loss').value.trim(),
+    inno_other:document.getElementById('f-inno-other').value.trim(),
+    formula:document.getElementById('f-formula').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    images:[...formImgs]
+  };
+
+  if(editingId){
+    const idx=models.findIndex(m=>m.id===editingId);
+    if(idx>=0) models[idx]=obj;
+  } else {
+    models.unshift(obj);
+  }
+  saveData(); render(); closeAdd();
+  showToast(editingId?'✅ 已更新':'✅ 模型已添加','ok');
+}
+
+/* ── DETAIL MODAL ── */
+let galleryIdx=0;
+
+function openDetail(id){
+  const m=models.find(x=>x.id===id);
+  if(!m)return;
+  curDetailId=id; galleryIdx=0;
+
+  const imgs=m.images||[];
+  const main=document.getElementById('galleryMain');
+  const thumbs=document.getElementById('galleryThumbs');
+  const cap=document.getElementById('galleryCaption');
+  main.innerHTML=''; thumbs.innerHTML='';
+
+  if(imgs.length){
+    const img=document.createElement('img'); img.src=imgs[0].data; img.alt=m.name;
+    main.appendChild(img);
+    cap.textContent=imgs[0].caption||'';
+    imgs.forEach((im,i)=>{
+      const t=document.createElement('div'); t.className='gthumb'+(i===0?' active':'');
+      t.innerHTML=`<img src="${im.data}">`;
+      t.onclick=()=>switchGallery(i,imgs);
+      thumbs.appendChild(t);
+    });
+  } else {
+    main.innerHTML='<div class="no-img">暂无架构图</div>';
+  }
+
+  document.getElementById('detailName').textContent=m.name;
+  const cc=catClass[m.category]||'cat-cnn';
+  const badge=document.getElementById('detailCatBadge');
+  badge.textContent=m.category||'';
+  badge.className=''; badge.classList.add(cc);
+  badge.style.cssText='font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600';
+
+  document.getElementById('d-year').textContent=m.year||'—';
+  document.getElementById('d-venue').textContent=m.venue||'—';
+  document.getElementById('d-dataset').textContent=m.dataset||'—';
+  document.getElementById('d-dice').textContent=m.dice?m.dice+'%':'—';
+  const paperEl=document.getElementById('d-paper');
+  paperEl.innerHTML=m.link
+    ?`<a href="${m.link}" target="_blank" class="paper-link">${m.paper||'查看论文'}</a>`
+    :(m.paper||'—');
+
+  const innoEl=document.getElementById('d-inno');
+  const innoSec=document.getElementById('d-inno-section');
+  const rows=[
+    ['输入/预处理',m.inno_input],['网络结构',m.inno_arch],
+    ['损失函数',m.inno_loss],['训练策略',m.inno_other]
+  ].filter(r=>r[1]);
+  if(rows.length){
+    innoEl.innerHTML=rows.map(r=>`<div class="inno-row"><span class="inno-label">${r[0]}</span><span class="inno-val">${r[1]}</span></div>`).join('');
+    innoSec.style.display='block';
+  } else { innoSec.style.display='none'; }
+
+  const fSec=document.getElementById('d-formula-section');
+  const fEl=document.getElementById('d-formula');
+  if(m.formula){
+    fEl.innerHTML=`\\(${m.formula}\\)`;
+    fSec.style.display='block';
+    if(window.MathJax) MathJax.typesetPromise([fEl]).catch(()=>{});
+  } else { fSec.style.display='none'; }
+
+  const nSec=document.getElementById('d-notes-section');
+  if(m.notes){ document.getElementById('d-notes').textContent=m.notes; nSec.style.display='block'; }
+  else { nSec.style.display='none'; }
+
+  const tagsEl=document.getElementById('d-tags');
+  tagsEl.innerHTML=(m.tags||[]).map(t=>`<span class="tag" style="font-size:12px;padding:3px 10px">${t}</span>`).join('');
+
+  document.getElementById('d-del-btn').onclick=()=>deleteModel(id);
+  document.getElementById('d-edit-btn').onclick=()=>{ closeDetail(); openAdd(id); };
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function switchGallery(i,imgs){
+  galleryIdx=i;
+  const main=document.getElementById('galleryMain');
+  main.innerHTML=`<img src="${imgs[i].data}" alt="图${i+1}">`;
+  document.getElementById('galleryCaption').textContent=imgs[i].caption||'';
+  document.querySelectorAll('.gthumb').forEach((t,j)=>t.classList.toggle('active',j===i));
+}
+
+function closeDetail(){ document.getElementById('detailModal').classList.remove('open'); }
+
+function deleteModel(id){
+  if(!confirm('确认删除？'))return;
+  models=models.filter(m=>m.id!==id);
+  saveData(); render(); closeDetail();
+  showToast('已删除','ok');
+}
+
+/* CLOSE ON OVERLAY CLICK */
+['addModal','detailModal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    if(e.target===document.getElementById(id))
+      id==='addModal'?closeAdd():closeDetail();
+  });
+});
+
+/* TOAST */
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type==='ok'?' ok':'');
+  setTimeout(()=>t.className='toast',2400);
+}
+
+loadData();
+</script>
+</body>
+</html>
