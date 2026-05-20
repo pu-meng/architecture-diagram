@@ -51,7 +51,8 @@ const KEY = 'medseg_zoo_v2';
     function updateFilterButtons() {
         const group = document.getElementById('filterGroup');
         const cats = getAllCategories();
-        if (curFilter !== 'all' && !cats.includes(curFilter)) curFilter = 'all';
+        // 只有在模型完全加载后才重置无效filter，避免云端同步时误清除
+        if (curFilter !== 'all' && models.length > 0 && !cats.includes(curFilter)) curFilter = 'all';
         let html = `<button class="fb${curFilter==='all'?' active':''}" onclick="setFilter('all',this)">全部</button>`;
         cats.forEach(cat => {
             html += `<button class="fb${curFilter===cat?' active':''}" onclick="setFilter('${cat.replace(/'/g,"\\'")}',this)">${cat}</button>`;
@@ -76,7 +77,15 @@ const KEY = 'medseg_zoo_v2';
                     const remoteTime = remote[0]?._updated || 1;
                     if (remoteTime >= localTime || models.length === 0) {
                         models = remote; localStorage.setItem(KEY, JSON.stringify(models));
-                        updateFilterButtons(); render();
+                        // 云端同步后保留当前筛选状态，不重置 curFilter
+                        const savedFilter = curFilter;
+                        updateFilterButtons();
+                        // 如果当前筛选在新数据中仍然有效则保留，否则才重置
+                        const cats = getAllCategories();
+                        if (savedFilter !== 'all' && cats.includes(savedFilter)) {
+                            curFilter = savedFilter;
+                        }
+                        render();
                         syncEl.textContent = '☁️ 云端已同步'; syncEl.style.color = 'var(--accent3)'; return;
                     }
                 }
