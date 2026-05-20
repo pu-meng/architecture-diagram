@@ -781,6 +781,12 @@ const KEY = 'medseg_zoo_v2';
     function openDetail(id) { openDetailPage(id); }
     function closeDetail() { closeDetailPage(); }
 
+    // 多时机清空搜索框，彻底防止浏览器会话恢复/autocomplete填入内容
+    function clearSearch() { document.getElementById('searchInput').value = ''; }
+    clearSearch();
+    document.addEventListener('DOMContentLoaded', clearSearch);
+    window.addEventListener('pageshow', clearSearch);
+    setTimeout(clearSearch, 0);
+    setTimeout(clearSearch, 100);
+
     loadData();
-    // 页面加载时清空搜索框，防止浏览器会话恢复自动填入上次内容
-    document.getElementById('searchInput').value = '';
