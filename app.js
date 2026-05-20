@@ -167,7 +167,13 @@ const KEY = 'medseg_zoo_v2';
         grid.appendChild(ac);
     }
 
-    function setFilter(cat, btn) { curFilter = cat; updateFilterButtons(); render(); }
+    function setFilter(cat, btn) {
+        // blur搜索框防止浏览器autocomplete在点击筛选时污染搜索框
+        document.getElementById('searchInput').blur();
+        curFilter = cat;
+        updateFilterButtons();
+        render();
+    }
 
     /* ── ADD / EDIT MODAL ── */
     function openAdd(id) {
