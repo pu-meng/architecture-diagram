@@ -795,79 +795,81 @@ input[list]::-webkit-calendar-picker-indicator { opacity: .6; cursor: pointer; }
         const btn = document.getElementById('autofillBtn');
         btn.disabled = true; btn.textContent = '⏳ 查询中…';
         setAutofillStatus('正在查询论文信息…', 'info');
+
         try {
-            let arxivId = null;
+            // 解析输入类型
+            let arxivId = null, doi = null, s2Id = null;
+
             const axMatch = raw.match(/arxiv\.org\/(?:abs|pdf|html)\/([0-9]{4}\.[0-9]{4,5}(?:v\d+)?)/i)
                 || raw.match(/^([0-9]{4}\.[0-9]{4,5}(?:v\d+)?)$/);
             if (axMatch) arxivId = axMatch[1].replace(/v\d+$/, '');
 
-            let doi = null;
-            const doiMatch = raw.match(/(?:doi\.org\/|^)(10\.\d{4,}\/\S+)/i);
+            const doiMatch = raw.match(/(?:doi\.org\/)(10\.[0-9]{4,}\/\S+)/i)
+                || (!arxivId && raw.match(/^(10\.[0-9]{4,}\/\S+)/i));
             if (doiMatch) doi = doiMatch[1];
 
-            let s2Id = null;
-            const s2Match = raw.match(/semanticscholar\.org\/paper\/[^/]*\/([a-f0-9]{40})/i)
-                || raw.match(/semanticscholar\.org\/paper\/([a-f0-9]{40})/i);
+            const s2Match = raw.match(/semanticscholar\.org\/paper\/[^/]*\/([a-f0-9]{40})/i);
             if (s2Match) s2Id = s2Match[1];
+
+            if (!arxivId && !doi && !s2Id) {
+                setAutofillStatus('❌ 无法识别格式，请粘贴 arXiv 链接、arXiv ID、DOI 或 Semantic Scholar 链接', 'err');
+                return;
+            }
 
             let filled = false;
 
-            if (arxivId && !filled) {
+            // ── 第一步：Semantic Scholar API（支持CORS，推荐）──
+            try {
+                const paperId = s2Id || (doi ? 'DOI:' + doi : 'ARXIV:' + arxivId);
+                const s2url = 'https://api.semanticscholar.org/graph/v1/paper/'
+                    + encodeURIComponent(paperId)
+                    + '?fields=title,year,venue,publicationVenue,externalIds,openAccessPdf,url';
+                const res = await fetch(s2url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.title) {
+                        document.getElementById('f-paper').value = data.title;
+                        if (data.year) document.getElementById('f-year').value = String(data.year);
+                        const venue = (data.publicationVenue && data.publicationVenue.name) || data.venue || '';
+                        if (venue) document.getElementById('f-venue').value = venue;
+                        const doiVal = data.externalIds && data.externalIds.DOI;
+                        const arxivVal = data.externalIds && data.externalIds.ArXiv;
+                        const pdfUrl = data.openAccessPdf && data.openAccessPdf.url;
+                        document.getElementById('f-link').value =
+                            doiVal ? 'https://doi.org/' + doiVal
+                            : arxivVal ? 'https://arxiv.org/abs/' + arxivVal
+                            : pdfUrl || data.url || raw;
+                        filled = true;
+                        setAutofillStatus('✅ 已填充：' + data.title.slice(0,55) + (data.title.length>55?'…':''), 'ok');
+                    }
+                }
+            } catch(e) { console.warn('S2 API err:', e); }
+
+            // ── 第二步：CrossRef API fallback（仅DOI，支持CORS）──
+            if (!filled && doi) {
                 try {
-                    const res = await fetch('https://export.arxiv.org/api/query?id_list=' + arxivId + '&max_results=1');
+                    const res = await fetch('https://api.crossref.org/works/' + encodeURIComponent(doi));
                     if (res.ok) {
-                        const xml = await res.text();
-                        const xd = new DOMParser().parseFromString(xml, 'text/xml');
-                        const entry = xd.querySelector('entry');
-                        if (entry) {
-                            const title = (entry.querySelector('title')?.textContent || '').replace(/\s+/g,' ').trim();
-                            const year = (entry.querySelector('published')?.textContent || '').slice(0,4);
-                            const journal = entry.querySelector('journal_ref')?.textContent?.trim() || '';
-                            const doiNode = entry.querySelector('[title="doi"]');
-                            const link = (doiNode ? doiNode.getAttribute('href') : '') || 'https://arxiv.org/abs/' + arxivId;
-                            if (title) {
-                                document.getElementById('f-paper').value = title;
-                                if (year) document.getElementById('f-year').value = year;
-                                if (journal) document.getElementById('f-venue').value = journal;
-                                document.getElementById('f-link').value = link;
-                                filled = true;
-                                setAutofillStatus('✅ 已从 arXiv 填充：' + title.slice(0,55) + (title.length>55?'…':''), 'ok');
-                            }
+                        const data = await res.json();
+                        const msg = data && data.message;
+                        if (msg && msg.title && msg.title[0]) {
+                            document.getElementById('f-paper').value = msg.title[0];
+                            const year = msg.published && msg.published['date-parts'] && msg.published['date-parts'][0] && msg.published['date-parts'][0][0];
+                            if (year) document.getElementById('f-year').value = String(year);
+                            const journal = (msg['container-title'] && msg['container-title'][0]) || (msg['short-container-title'] && msg['short-container-title'][0]) || '';
+                            if (journal) document.getElementById('f-venue').value = journal;
+                            document.getElementById('f-link').value = 'https://doi.org/' + doi;
+                            filled = true;
+                            setAutofillStatus('✅ 已从 CrossRef 填充：' + msg.title[0].slice(0,55) + (msg.title[0].length>55?'…':''), 'ok');
                         }
                     }
-                } catch(e) { console.log('arXiv err', e); }
+                } catch(e) { console.warn('CrossRef err:', e); }
             }
 
-            if (!filled && (doi || arxivId || s2Id)) {
-                try {
-                    const paperId = s2Id || (doi ? 'DOI:' + doi : (arxivId ? 'ARXIV:' + arxivId : null));
-                    if (paperId) {
-                        const res = await fetch('https://api.semanticscholar.org/graph/v1/paper/'
-                            + encodeURIComponent(paperId) + '?fields=title,year,venue,publicationVenue,externalIds,openAccessPdf,url');
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.title) {
-                                document.getElementById('f-paper').value = data.title;
-                                if (data.year) document.getElementById('f-year').value = String(data.year);
-                                const venue = (data.publicationVenue && data.publicationVenue.name) || data.venue || '';
-                                if (venue) document.getElementById('f-venue').value = venue;
-                                const doiVal = data.externalIds && data.externalIds.DOI;
-                                const arxivVal = data.externalIds && data.externalIds.ArXiv;
-                                const pdfUrl = data.openAccessPdf && data.openAccessPdf.url;
-                                document.getElementById('f-link').value = doiVal ? 'https://doi.org/' + doiVal
-                                    : arxivVal ? 'https://arxiv.org/abs/' + arxivVal
-                                    : pdfUrl || data.url || raw;
-                                filled = true;
-                                setAutofillStatus('✅ 已从 Semantic Scholar 填充：' + data.title.slice(0,55) + (data.title.length>55?'…':''), 'ok');
-                            }
-                        }
-                    }
-                } catch(e) { console.log('S2 err', e); }
-            }
+            if (!filled) setAutofillStatus('❌ 查询失败，可能是网络问题或该论文未被收录，请手动填写', 'err');
 
-            if (!filled) setAutofillStatus('❌ 未能识别链接，请检查格式或手动填写', 'err');
         } catch(e) {
-            setAutofillStatus('❌ 网络错误：' + e.message, 'err');
+            setAutofillStatus('❌ 错误：' + e.message, 'err');
         } finally {
             btn.disabled = false; btn.textContent = '✦ 填充';
         }
