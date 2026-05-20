@@ -781,12 +781,17 @@ const KEY = 'medseg_zoo_v2';
     function openDetail(id) { openDetailPage(id); }
     function closeDetail() { closeDetailPage(); }
 
-    // 多时机清空搜索框，彻底防止浏览器会话恢复/autocomplete填入内容
-    function clearSearch() { document.getElementById('searchInput').value = ''; }
+    // 彻底清空搜索框（Edge浏览器表单恢复比Chrome更晚触发）
+    function clearSearch() {
+        const el = document.getElementById('searchInput');
+        if (el) { el.value = ''; el.defaultValue = ''; }
+    }
     clearSearch();
     document.addEventListener('DOMContentLoaded', clearSearch);
     window.addEventListener('pageshow', clearSearch);
     setTimeout(clearSearch, 0);
     setTimeout(clearSearch, 100);
+    setTimeout(clearSearch, 300);
+    setTimeout(clearSearch, 600);
 
     loadData();
